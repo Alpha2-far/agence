@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+/* bm-design-system:start */
+@import "./design-system.css";
+/* bm-design-system:end */
