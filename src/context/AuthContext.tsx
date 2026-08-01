@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     configured: supabaseConfig.hasUrl && supabaseConfig.hasPublicKey,
     signIn: async (username, password) => {
+      if (!supabase) return { error: "La connexion Supabase n'est pas configurée." };
       const cleanUsername = username.trim().toLowerCase();
       const cleanPassword = password.trim();
 
