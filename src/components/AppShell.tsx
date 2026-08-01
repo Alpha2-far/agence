@@ -117,10 +117,14 @@ export function AppShell() {
         })}
       </nav>
 
-      <div className="border-t border-hairline p-3">
+      <div className="border-t border-hairline p-3 space-y-3">
         <div className={cn("rounded-md bg-surface p-3", !desktopOpen && "lg:hidden")}>
           <p className="truncate text-sm font-medium text-ink-display">{[user.employe_prenom, user.employe_nom].filter(Boolean).join(" ") || user.nom_utilisateur}</p>
           <p className="mt-0.5 truncate text-xs text-ink-muted">{user.type} · {user.agence_nom ?? "Toutes les agences"}</p>
+        </div>
+        <div className={cn("px-1", !desktopOpen && "lg:hidden")}>
+          <p className="mb-1.5 text-xs font-medium text-ink-muted">Thème d'affichage</p>
+          <ThemeToggle block />
         </div>
       </div>
     </>
@@ -162,7 +166,7 @@ export function AppShell() {
               <span className="hidden sm:inline">Recherche globale</span>
               <kbd className="hidden md:inline-block rounded bg-page px-1.5 py-0.5 text-[10px] font-mono border border-hairline">⌘K</kbd>
             </Button>
-            <ThemeToggle className="hidden sm:inline-flex" />
+            <ThemeToggle />
             <Button size="sm" variant="ghost" onClick={() => void signOut()}>Déconnexion</Button>
           </div>
         </header>

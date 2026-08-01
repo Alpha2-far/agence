@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toastError, toastSuccess } from "@/components/ui/toast";
 import { useAuth } from "@/context/AuthContext";
 import { exportParcelsManifestPDF } from "@/lib/pdfExport";
 import { createScopedSupabaseClient } from "@/lib/supabase";
@@ -219,10 +220,11 @@ export function Colis() {
 
       if (inserted) {
         setReceiptColis(inserted as ColisItem);
+        toastSuccess("Colis enregistré avec succès.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de l'enregistrement du colis.");
+      toastError(`Erreur enregistrement colis : ${err?.message || err?.details || "Échec de l'opération."}`);
     } finally {
       setSubmitting(false);
     }
@@ -252,10 +254,11 @@ export function Colis() {
       if (updateErr) throw updateErr;
 
       setAssigningColis(null);
+      toastSuccess("Colis assigné au trajet.");
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de l'assignation du colis au trajet.");
+      toastError(`Erreur assignation colis : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 
@@ -271,10 +274,11 @@ export function Colis() {
         .eq("id", colisId);
 
       if (updateErr) throw updateErr;
+      toastSuccess("Statut du colis mis à jour.");
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors du changement de statut du colis.");
+      toastError(`Erreur statut colis : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 

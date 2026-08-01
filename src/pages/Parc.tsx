@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toastError, toastSuccess } from "@/components/ui/toast";
 import { useAuth } from "@/context/AuthContext";
 import { hasMinimumRole } from "@/lib/access";
 import { createScopedSupabaseClient } from "@/lib/supabase";
@@ -196,10 +197,11 @@ export function Parc() {
       }
 
       setIsVehicleModalOpen(false);
+      toastSuccess(editingVehicle ? "Véhicule mis à jour." : "Véhicule enregistré avec succès.");
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de l'enregistrement du véhicule.");
+      toastError(`Erreur enregistrement véhicule : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 
@@ -212,11 +214,11 @@ export function Parc() {
     try {
       const { error: delErr } = await client.from("vehicule").delete().eq("id", veh.id);
       if (delErr) throw delErr;
+      toastSuccess("Véhicule supprimé.");
       await loadData();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error(err);
-      const errMsg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Erreur lors de la suppression du véhicule : ${errMsg}`);
+      toastError(`Erreur suppression véhicule : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 
@@ -254,10 +256,11 @@ export function Parc() {
       await client.from("vehicule").update({ etat: "En Maintenance" }).eq("id", targetVehicleForMaint.id);
 
       setIsMaintenanceModalOpen(false);
+      toastSuccess("Maintenance enregistrée avec succès.");
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de l'enregistrement de la maintenance.");
+      toastError(`Erreur enregistrement maintenance : ${err?.message || err?.details || "Échec de l'opération."}`);
     } finally {
       setSubmitting(false);
     }
@@ -298,10 +301,11 @@ export function Parc() {
         .update({ etat: newEtat })
         .eq("id", vehId);
       if (updateErr) throw updateErr;
+      toastSuccess("État du véhicule mis à jour.");
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors du changement d'état du véhicule.");
+      toastError(`Erreur changement état : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 

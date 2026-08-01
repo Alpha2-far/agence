@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toastError, toastSuccess } from "@/components/ui/toast";
 import { useAuth } from "@/context/AuthContext";
 import { hasMinimumRole } from "@/lib/access";
 import { createScopedSupabaseClient } from "@/lib/supabase";
@@ -180,10 +181,11 @@ export function Employes() {
       }
 
       setIsModalOpen(false);
+      toastSuccess(editingEmployee ? "Employé mis à jour." : "Employé créé avec succès.");
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de l'enregistrement de l'employé.");
+      toastError(`Erreur enregistrement employé : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 
@@ -198,10 +200,11 @@ export function Employes() {
         .update({ actif: !emp.actif })
         .eq("id", emp.id);
       if (toggleErr) throw toggleErr;
+      toastSuccess("Statut employé mis à jour.");
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors du changement de statut.");
+      toastError(`Erreur statut employé : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 
@@ -214,11 +217,11 @@ export function Employes() {
     try {
       const { error: delErr } = await client.from("employe").delete().eq("id", emp.id);
       if (delErr) throw delErr;
+      toastSuccess("Employé supprimé.");
       await loadData();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error(err);
-      const errMsg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Erreur lors de la suppression de l'employé : ${errMsg}`);
+      toastError(`Erreur suppression employé : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 

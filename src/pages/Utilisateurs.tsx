@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toastError, toastSuccess } from "@/components/ui/toast";
 import { useAuth } from "@/context/AuthContext";
 import { type AppRole } from "@/lib/access";
 import { createScopedSupabaseClient } from "@/lib/supabase";
@@ -130,7 +131,7 @@ export function Utilisateurs() {
     e.preventDefault();
     if (!user || !formUsername.trim()) return;
     if (!editingUser && !formPassword) {
-      alert("Veuillez saisir un mot de passe pour le nouveau compte.");
+      toastError("Veuillez saisir un mot de passe pour le nouveau compte.");
       return;
     }
     const client = createScopedSupabaseClient({ agenceId: user.agence_id, role: user.type });
@@ -187,17 +188,15 @@ export function Utilisateurs() {
       }
 
       setIsModalOpen(false);
+      toastSuccess(editingUser ? "Compte utilisateur mis à jour." : "Compte utilisateur créé avec succès.");
       await loadData();
     } catch (err: unknown) {
       console.error(err);
       const errMsg = err instanceof Error ? err.message : JSON.stringify(err);
       if (errMsg.includes("42501") || errMsg.includes("row-level security")) {
-        alert(
-          "Erreur RLS Supabase (42501) :\n" +
-          "La table 'utilisateur' bloque la création directe. Veuillez exécuter le fichier 'GNANZE_SCHEMA.sql' dans votre SQL Editor Supabase pour installer la fonction 'save_utilisateur' et débloquer les droits."
-        );
+        toastError("Erreur RLS Supabase (42501) : veuillez ré-exécuter le script SQL dans votre SQL Editor.");
       } else {
-        alert(`Erreur lors de l'enregistrement : ${errMsg}`);
+        toastError(`Erreur lors de l'enregistrement : ${errMsg}`);
       }
     } finally {
       setSubmitting(false);
@@ -227,11 +226,12 @@ export function Utilisateurs() {
           .eq("id", u.id);
         if (directErr) throw directErr;
       }
+      toastSuccess("Statut du compte mis à jour.");
       await loadData();
     } catch (err: unknown) {
       console.error(err);
       const errMsg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Erreur changement d'état : ${errMsg}`);
+      toastError(`Erreur changement d'état : ${errMsg}`);
     }
   };
 
@@ -244,11 +244,12 @@ export function Utilisateurs() {
     try {
       const { error: delErr } = await client.from("utilisateur").delete().eq("id", u.id);
       if (delErr) throw delErr;
+      toastSuccess("Compte utilisateur supprimé.");
       await loadData();
     } catch (err: unknown) {
       console.error(err);
       const errMsg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Erreur lors de la suppression : ${errMsg}`);
+      toastError(`Erreur lors de la suppression : ${errMsg}`);
     }
   };
 

@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toastError, toastSuccess } from "@/components/ui/toast";
 import { useAuth } from "@/context/AuthContext";
 import { hasMinimumRole } from "@/lib/access";
 import { exportJourneyManifestPDF } from "@/lib/pdfExport";
@@ -223,10 +224,11 @@ export function Trajets() {
       }
 
       setIsModalOpen(false);
+      toastSuccess(editingJourney ? "Trajet mis à jour." : "Trajet créé avec succès.");
       await loadData();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de l'enregistrement du trajet.");
+      toastError(`Erreur enregistrement trajet : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 
@@ -238,10 +240,11 @@ export function Trajets() {
     try {
       const { error: updateErr } = await client.from("trajet").update({ statut: newStatut }).eq("id", journeyId);
       if (updateErr) throw updateErr;
+      toastSuccess("Statut trajet mis à jour.");
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors du changement de statut.");
+      toastError(`Erreur statut trajet : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 
@@ -254,11 +257,11 @@ export function Trajets() {
     try {
       const { error: delErr } = await client.from("trajet").delete().eq("id", journey.id);
       if (delErr) throw delErr;
+      toastSuccess("Trajet supprimé.");
       await loadData();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error(err);
-      const errMsg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Erreur lors de la suppression du trajet : ${errMsg}`);
+      toastError(`Erreur suppression trajet : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 

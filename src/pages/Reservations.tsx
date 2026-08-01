@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toastError, toastSuccess } from "@/components/ui/toast";
 import { useAuth } from "@/context/AuthContext";
 import { createScopedSupabaseClient } from "@/lib/supabase";
 
@@ -219,10 +220,11 @@ export function Reservations() {
       if (insertErr) throw insertErr;
 
       setIsCreateModalOpen(false);
+      toastSuccess("Réservation créée avec succès.");
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de la création de la réservation.");
+      toastError(`Erreur création réservation : ${err?.message || err?.details || "Échec de l'opération."}`);
     } finally {
       setSubmitting(false);
     }
@@ -236,10 +238,11 @@ export function Reservations() {
     try {
       const { error: updateErr } = await client.from("reservation").update({ statut: newStatut }).eq("id", id);
       if (updateErr) throw updateErr;
+      toastSuccess("Statut réservation mis à jour.");
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de la mise à jour de la réservation.");
+      toastError(`Erreur statut réservation : ${err?.message || err?.details || "Échec de l'opération."}`);
     }
   };
 
@@ -300,6 +303,7 @@ export function Reservations() {
 
       const targetRes = convertingReservation;
       setConvertingReservation(null);
+      toastSuccess("Réservation convertie en ticket payé.");
       await loadData();
 
       // 4. Trigger print modal
@@ -322,9 +326,9 @@ export function Reservations() {
           vendeur_nom: `${user.employe_prenom ?? ""} ${user.employe_nom ?? user.nom_utilisateur}`.trim(),
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de la conversion de la réservation en ticket.");
+      toastError(`Erreur conversion réservation : ${err?.message || err?.details || "Échec de l'opération."}`);
     } finally {
       setSubmitting(false);
     }

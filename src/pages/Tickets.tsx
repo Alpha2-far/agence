@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toastError, toastSuccess } from "@/components/ui/toast";
 import { useAuth } from "@/context/AuthContext";
 import { createScopedSupabaseClient } from "@/lib/supabase";
 
@@ -283,10 +284,11 @@ export function Tickets() {
           agence_telephone: "+229 21 30 00 01",
           vendeur_nom: `${user.employe_prenom ?? ""} ${user.employe_nom ?? user.nom_utilisateur}`.trim(),
         });
+        toastSuccess("Ticket vendu et facturé avec succès !");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur lors de la vente du ticket.");
+      toastError(`Erreur vente de ticket : ${err?.message || err?.details || "Échec de l'opération."}`);
     } finally {
       setSubmitting(false);
     }
