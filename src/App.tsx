@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import DesignSystem from "@/admin/design-system/page";
 import { AppShell } from "@/components/AppShell";
+import { ToastProvider } from "@/components/ui/toast";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { hasMinimumRole, type AppRole } from "@/lib/access";
 import { Agences } from "@/pages/Agences";
@@ -34,6 +35,7 @@ function RequireRole({ role, children }: { role: AppRole; children: React.ReactN
 export default function App() {
   return (
     <AuthProvider>
+      <ToastProvider />
       <BrowserRouter>
         <Routes>
           <Route path="/admin/design-system" element={<RequireAuth><RequireRole role="Admin"><DesignSystem /></RequireRole></RequireAuth>} />

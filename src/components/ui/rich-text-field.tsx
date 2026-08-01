@@ -89,7 +89,7 @@ function detectCurrentList(
     if (node.type === ordered) return { mode: "ordered", depth };
     if (node.type === bullet) {
       const firstItem = node.firstChild;
-      const isTask = firstItem?.attrs?.checked != null;
+      const isTask = firstItem?.attrs?.checked !== undefined && firstItem?.attrs?.checked !== null;
       return { mode: isTask ? "task" : "bullet", depth };
     }
   }
@@ -263,6 +263,8 @@ const RichTextField = React.forwardRef<HTMLDivElement, RichTextFieldProps>(
             onChangeRef.current?.(markdown);
           });
         });
+      }).catch((err) => {
+        console.error("Failed to initialize Crepe editor:", err);
       });
 
       return () => {

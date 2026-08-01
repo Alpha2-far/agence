@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
+import { toastError } from "@/components/ui/toast";
 import { createScopedSupabaseClient } from "@/lib/supabase";
 
 export type AgencyItem = {
@@ -125,7 +126,7 @@ export function Agences() {
       await loadData();
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de l'enregistrement de l'agence.");
+      toastError("Erreur lors de l'enregistrement de l'agence.");
     }
   };
 

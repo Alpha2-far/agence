@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toastError } from "@/components/ui/toast";
 import { useAuth } from "@/context/AuthContext";
 import { createScopedSupabaseClient } from "@/lib/supabase";
 
@@ -136,7 +137,7 @@ export function Clients() {
       await loadData();
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de la suppression du client.");
+      toastError("Erreur lors de la suppression du client.");
     }
   };
 
@@ -171,7 +172,7 @@ export function Clients() {
       await loadData();
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de l'enregistrement du client.");
+      toastError("Erreur lors de l'enregistrement du client.");
     } finally {
       setSubmitting(false);
     }
