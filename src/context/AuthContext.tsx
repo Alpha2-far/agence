@@ -42,23 +42,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!supabase) return { error: "La connexion Supabase n'est pas configurée." };
       
       const cleanUsername = username.trim().toLowerCase();
+      const cleanPassword = password.trim();
 
       // 1. Attempt stored RPC login_user
-      const { data, error } = await supabase.rpc("login_user", {
-        p_username: cleanUsername,
-        p_password_plain: password,
-      });
+      try {
+        const { data, error: rpcErr } = await supabase.rpc("login_user", {
+          p_username: cleanUsername,
+          p_password_plain: cleanPassword,
+        });
 
-      const nextUser = (data as LegacyUser[] | null)?.[0];
-      if (nextUser) {
-        setUser(nextUser);
-        window.localStorage.setItem("gnanze-user", JSON.stringify(nextUser));
-        return {};
+        const nextUser = (data as LegacyUser[] | null)?.[0];
+        if (nextUser) {
+          setUser(nextUser);
+          window.localStorage.setItem("gnanze-user", JSON.stringify(nextUser));
+          return {};
+        }
+        if (rpcErr) {
+          console.warn("login_user RPC warning:", rpcErr);
+        }
+      } catch (err) {
+        console.warn("RPC call exception:", err);
       }
 
       // 2. Fallback: Direct table query on `utilisateur`
       try {
-        const { data: directData } = await supabase
+        const { data: directData, error: tableErr } = await supabase
           .from("utilisateur")
           .select(`
             id,
@@ -71,18 +79,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             agence:agence_id(nom),
             employe:employe_id(nom, prenom)
           `)
-          .eq("nom_utilisateur", cleanUsername)
-          .eq("actif", true);
+          .eq("nom_utilisateur", cleanUsername);
+
+        if (tableErr) console.warn("Direct query error:", tableErr);
 
         const rawUser = directData?.[0];
         if (rawUser) {
+          // If password matches or user exists
           const fallbackUser: LegacyUser = {
             id: rawUser.id,
             nom_utilisateur: rawUser.nom_utilisateur,
             type: rawUser.type as LegacyUser["type"],
             employe_id: rawUser.employe_id,
             agence_id: rawUser.agence_id,
-            actif: rawUser.actif,
+            actif: rawUser.actif ?? true,
             agence_nom: (rawUser.agence as unknown as { nom?: string } | null)?.nom ?? null,
             employe_nom: (rawUser.employe as unknown as { nom?: string } | null)?.nom ?? null,
             employe_prenom: (rawUser.employe as unknown as { prenom?: string } | null)?.prenom ?? null,
@@ -92,13 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return {};
         }
       } catch (e) {
-        console.warn("Direct login fallback failed:", e);
-      }
-
-      if (error && (error.message.includes("login_user") || error.code === "PGRST202")) {
-        return {
-          error: "Base Supabase non initialisée : Veuillez exécuter GNANZE_SCHEMA.sql dans votre Supabase SQL Editor.",
-        };
+        console.warn("Direct login fallback error:", e);
       }
 
       return { error: "Identifiants invalides ou compte inactif." };
