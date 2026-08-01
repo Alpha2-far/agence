@@ -1,7 +1,9 @@
--- Enable pgcrypto extension for password hashing/checking
+-- GNANZE TRANSPORT - SCHEMA SQL DEFINITIF & DEBLOCAGE SUPABASE
+
+-- 1. Extension
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 1. Create tables
+-- 2. Tables Base
 CREATE TABLE IF NOT EXISTS agence (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nom TEXT NOT NULL,
@@ -41,7 +43,7 @@ CREATE TABLE IF NOT EXISTS vehicule (
   immatriculation TEXT NOT NULL UNIQUE,
   type TEXT,
   marque TEXT,
-  capacite INT NOT NULL,
+  capacite INT NOT NULL DEFAULT 50,
   etat TEXT DEFAULT 'Disponible' CHECK (etat IN ('Disponible', 'En Service', 'En Maintenance', 'Hors Service')),
   agence_id UUID REFERENCES agence(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now()
@@ -142,7 +144,7 @@ CREATE TABLE IF NOT EXISTS colis (
   telephone_receveur TEXT,
   contenu TEXT,
   statut TEXT DEFAULT 'En Attente' CHECK (statut IN ('En Attente', 'Assigné', 'En Transit', 'Livré', 'Retourné')),
-  priorite INT DEFAULT 1 CHECK (priorite IN (1, 2, 3)), -- 1=Normal, 2=Urgent, 3=Express
+  priorite INT DEFAULT 1 CHECK (priorite IN (1, 2, 3)),
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -169,13 +171,11 @@ CREATE TABLE IF NOT EXISTS utilisateur (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 2. Create sequences
+-- 3. Séquences
 CREATE SEQUENCE IF NOT EXISTS ticket_seq START WITH 42546;
 CREATE SEQUENCE IF NOT EXISTS colis_seq START WITH 10001;
 
--- 3. Create triggers & trigger functions
-
--- Trigger function for ticket numbering
+-- 4. Fonctions & Triggers
 CREATE OR REPLACE FUNCTION set_ticket_number()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -186,12 +186,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_ticket_number
+DROP TRIGGER IF EXISTS trg_ticket_number ON facture;
+CREATE TRIGGER trg_ticket_number
 BEFORE INSERT ON facture
-FOR EACH ROW
-EXECUTE FUNCTION set_ticket_number();
+FOR EACH ROW EXECUTE FUNCTION set_ticket_number();
 
--- Trigger function for colis numbering
 CREATE OR REPLACE FUNCTION set_colis_number()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -202,64 +201,39 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_colis_number
+DROP TRIGGER IF EXISTS trg_colis_number ON colis;
+CREATE TRIGGER trg_colis_number
 BEFORE INSERT ON colis
-FOR EACH ROW
-EXECUTE FUNCTION set_colis_number();
+FOR EACH ROW EXECUTE FUNCTION set_colis_number();
 
--- Trigger function for reglement -> mouvement & invoice status
 CREATE OR REPLACE FUNCTION reglement_to_mouvement()
 RETURNS TRIGGER AS $$
 DECLARE
   v_facture RECORD;
   v_total_reglement NUMERIC(10,2);
 BEGIN
-  -- Fetch invoice info
   SELECT * INTO v_facture FROM facture WHERE id = NEW.facture_id;
 
-  -- Insert Credit ledger record
   INSERT INTO mouvement (
-    agence_id,
-    type,
-    libelle,
-    credit,
-    debit,
-    source,
-    source_id,
-    date_mvt,
-    heure_mvt
+    agence_id, type, libelle, credit, debit, source, source_id, date_mvt, heure_mvt
   ) VALUES (
-    v_facture.agence_id,
-    'Crédit',
-    'Règlement facture ' || v_facture.numero_facture,
-    NEW.montant,
-    0,
-    'REGLEMENT',
-    NEW.id,
-    NEW.date_reglement,
-    NEW.heure_reglement
+    v_facture.agence_id, 'Crédit', 'Règlement facture ' || v_facture.numero_facture,
+    NEW.montant, 0, 'REGLEMENT', NEW.id, NEW.date_reglement, NEW.heure_reglement
   );
 
-  -- Calculate total payments for this invoice
-  SELECT COALESCE(SUM(montant), 0) INTO v_total_reglement 
-  FROM reglement 
-  WHERE facture_id = NEW.facture_id;
-
-  -- Update invoice to Payé if total payments >= invoice amount
+  SELECT COALESCE(SUM(montant), 0) INTO v_total_reglement FROM reglement WHERE facture_id = NEW.facture_id;
   IF v_total_reglement >= v_facture.montant THEN
     UPDATE facture SET etat = 'Payé' WHERE id = NEW.facture_id;
   END IF;
-
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_reglement_to_mouvement
+DROP TRIGGER IF EXISTS trg_reglement_to_mouvement ON reglement;
+CREATE TRIGGER trg_reglement_to_mouvement
 AFTER INSERT ON reglement
-FOR EACH ROW
-EXECUTE FUNCTION reglement_to_mouvement();
+FOR EACH ROW EXECUTE FUNCTION reglement_to_mouvement();
 
--- Trigger function for maintenance -> mouvement
 CREATE OR REPLACE FUNCTION maintenance_to_mouvement()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -269,39 +243,57 @@ BEGIN
     SELECT immatriculation INTO v_immatriculation FROM vehicule WHERE id = NEW.vehicule_id;
 
     INSERT INTO mouvement (
-      agence_id,
-      type,
-      libelle,
-      credit,
-      debit,
-      source,
-      source_id,
-      date_mvt,
-      heure_mvt
+      agence_id, type, libelle, credit, debit, source, source_id, date_mvt, heure_mvt
     ) VALUES (
-      NEW.agence_id,
-      'Débit',
-      'Maintenance véhicule ' || COALESCE(v_immatriculation, NEW.vehicule_id::TEXT),
-      0,
-      NEW.cout,
-      'MAINTENANCE',
-      NEW.id,
-      NEW.date_maintenance,
-      NEW.heure_maintenance
+      NEW.agence_id, 'Débit', 'Maintenance véhicule ' || COALESCE(v_immatriculation, NEW.vehicule_id::TEXT),
+      0, NEW.cout, 'MAINTENANCE', NEW.id, NEW.date_maintenance, NEW.heure_maintenance
     );
   END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE TRIGGER trg_maintenance_to_mouvement
+DROP TRIGGER IF EXISTS trg_maintenance_to_mouvement ON maintenance;
+CREATE TRIGGER trg_maintenance_to_mouvement
 AFTER INSERT ON maintenance
-FOR EACH ROW
-EXECUTE FUNCTION maintenance_to_mouvement();
+FOR EACH ROW EXECUTE FUNCTION maintenance_to_mouvement();
 
--- 4. Create SQL Views
+CREATE OR REPLACE FUNCTION set_agence_id_from_trajet()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.agence_id IS NULL THEN
+    SELECT agence_id INTO NEW.agence_id FROM trajet WHERE id = NEW.trajet_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
--- Journey Occupancy View
+DROP TRIGGER IF EXISTS trg_set_facture_agence_id ON facture;
+CREATE TRIGGER trg_set_facture_agence_id
+BEFORE INSERT ON facture
+FOR EACH ROW EXECUTE FUNCTION set_agence_id_from_trajet();
+
+DROP TRIGGER IF EXISTS trg_set_reservation_agence_id ON reservation;
+CREATE TRIGGER trg_set_reservation_agence_id
+BEFORE INSERT ON reservation
+FOR EACH ROW EXECUTE FUNCTION set_agence_id_from_trajet();
+
+CREATE OR REPLACE FUNCTION set_maintenance_agence_id()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.agence_id IS NULL THEN
+    SELECT agence_id INTO NEW.agence_id FROM vehicule WHERE id = NEW.vehicule_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_set_maintenance_agence_id ON maintenance;
+CREATE TRIGGER trg_set_maintenance_agence_id
+BEFORE INSERT ON maintenance
+FOR EACH ROW EXECUTE FUNCTION set_maintenance_agence_id();
+
+-- 5. Vues SQL
 CREATE OR REPLACE VIEW vue_occupation_trajet AS
 SELECT 
   t.id AS trajet_id,
@@ -309,11 +301,11 @@ SELECT
   t.destination,
   t.date_voyage,
   t.heure_depart,
-  coalesce(v.capacite, 15) AS capacite_vehicule,
+  COALESCE(v.capacite, 50) AS capacite_vehicule,
   COALESCE(count(DISTINCT f.id) FILTER (WHERE f.etat IN ('Payé', 'Non Payé')), 0) AS nb_passagers_confirmes,
   COALESCE(count(DISTINCT r.id) FILTER (WHERE r.statut IN ('En Attente', 'Confirmée')), 0) AS nb_reservations_actives,
   COALESCE(count(DISTINCT c.id), 0) AS nb_colis,
-  (coalesce(v.capacite, 15) - 
+  (COALESCE(v.capacite, 50) - 
    COALESCE(count(DISTINCT f.id) FILTER (WHERE f.etat IN ('Payé', 'Non Payé')), 0) - 
    COALESCE(count(DISTINCT r.id) FILTER (WHERE r.statut IN ('En Attente', 'Confirmée')), 0)
   ) AS places_disponibles
@@ -324,7 +316,6 @@ LEFT JOIN reservation r ON r.trajet_id = t.id
 LEFT JOIN colis c ON c.trajet_id = t.id
 GROUP BY t.id, t.depart, t.destination, t.date_voyage, t.heure_depart, v.capacite;
 
--- Cash Flow Ledger View
 CREATE OR REPLACE VIEW vue_solde_caisse AS
 SELECT 
   agence_id,
@@ -334,7 +325,6 @@ SELECT
 FROM mouvement
 GROUP BY agence_id;
 
--- Global Dashboard Metrics View
 CREATE OR REPLACE VIEW vue_dashboard AS
 SELECT 
   (SELECT COALESCE(COUNT(id), 0) FROM facture WHERE etat = 'Payé') AS total_passagers,
@@ -344,7 +334,7 @@ SELECT
   (SELECT COALESCE(COUNT(id), 0) FROM colis) AS total_colis,
   (SELECT COALESCE(COUNT(id), 0) FROM reservation WHERE statut IN ('En Attente', 'Confirmée')) AS total_reservations_actives;
 
--- 5. User Credentials Login Function using pgcrypto
+-- 6. Fonctions d'Authentification & Comptes
 CREATE OR REPLACE FUNCTION login_user(p_username TEXT, p_password_plain TEXT)
 RETURNS TABLE (
   id UUID,
@@ -372,44 +362,12 @@ BEGIN
   FROM utilisateur u
   LEFT JOIN agence a ON u.agence_id = a.id
   LEFT JOIN employe e ON u.employe_id = e.id
-  WHERE u.nom_utilisateur = p_username 
+  WHERE u.nom_utilisateur = LOWER(p_username) 
     AND u.mot_de_passe = crypt(p_password_plain, u.mot_de_passe)
     AND u.actif = TRUE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 6. Insert Seed Data using Static UUIDs for references
-
--- Insert Agencies
-INSERT INTO agence (id, nom, ville, telephone, mail, responsable, horaire_ouverture) VALUES
-('a0000000-0000-0000-0000-000000000001', 'Agence de Cotonou', 'Cotonou', '+229 21 30 00 01', 'cotonou@gnanze.com', 'M. Paul Sossa', '07:00 - 20:00'),
-('a0000000-0000-0000-0000-000000000002', 'Agence de Parakou', 'Parakou', '+229 23 61 00 02', 'parakou@gnanze.com', 'Mme. Alice Toko', '07:00 - 20:00')
-ON CONFLICT (id) DO NOTHING;
-
--- Insert Functions
-INSERT INTO fonction (id, intitule, salaire, attribut, details) VALUES
-('f0000000-0000-0000-0000-000000000001', 'SuperAdmin', 1000000.00, 'Administration Globale', 'Gestion complète du système multi-agence'),
-('f0000000-0000-0000-0000-000000000002', 'Chef Agence', 500000.00, 'Administration Agence', 'Gestion locale de son agence, caisses et employés'),
-('f0000000-0000-0000-0000-000000000003', 'Secrétaire', 250000.00, 'Ventes et Colis', 'Caissier ou agent d''accueil, billetterie et colis'),
-('f0000000-0000-0000-0000-000000000004', 'Conducteur', 300000.00, 'Chauffeur', 'Conducteur de bus pour les trajets interurbains')
-ON CONFLICT (id) DO NOTHING;
-
--- Insert Employees
-INSERT INTO employe (id, matricule, nom, prenom, telephone, agence_id, fonction_id, qualification, date_embauche) VALUES
-('e0000000-0000-0000-0000-000000000001', 'EMP-001', 'KOFFI', 'Jean', '+229 97 00 00 01', 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000001', 'Ingénieur Systèmes', '2025-01-15'),
-('e0000000-0000-0000-0000-000000000002', 'EMP-002', 'SADJI', 'Hubert', '+229 95 00 00 02', 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000002', 'Manager Logistique', '2025-02-01'),
-('e0000000-0000-0000-0000-000000000003', 'EMP-003', 'BIO', 'Mariam', '+229 90 00 00 03', 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000003', 'Comptable Assistante', '2025-03-01'),
-('e0000000-0000-0000-0000-000000000004', 'EMP-004', 'AGBADO', 'Pascal', '+229 91 00 00 04', 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000004', 'Permis D, FIMO', '2025-02-10')
-ON CONFLICT (id) DO NOTHING;
-
--- Insert Users (mot_de_passe check: crypt('pass', gen_salt('bf')))
-INSERT INTO utilisateur (id, nom_utilisateur, mot_de_passe, type, employe_id, agence_id) VALUES
-('10000000-0000-0000-0000-000000000001', 'superadmin', crypt('superadmin123', gen_salt('bf')), 'SuperAdmin', 'e0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001'),
-('20000000-0000-0000-0000-000000000002', 'admin', crypt('admin123', gen_salt('bf')), 'Admin', 'e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001'),
-('30000000-0000-0000-0000-000000000003', 'caissier', crypt('caissier123', gen_salt('bf')), 'user', 'e0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001')
-ON CONFLICT (id) DO NOTHING;
-
--- 7. User Account Save/Update Function using pgcrypto Blowfish encryption
 CREATE OR REPLACE FUNCTION save_utilisateur(
   p_id UUID,
   p_nom_utilisateur TEXT,
@@ -422,11 +380,11 @@ CREATE OR REPLACE FUNCTION save_utilisateur(
 BEGIN
   IF p_id IS NULL THEN
     INSERT INTO utilisateur (nom_utilisateur, mot_de_passe, type, employe_id, agence_id, actif)
-    VALUES (p_nom_utilisateur, crypt(p_mot_de_passe, gen_salt('bf')), p_type, p_employe_id, p_agence_id, p_actif);
+    VALUES (LOWER(p_nom_utilisateur), crypt(p_mot_de_passe, gen_salt('bf')), p_type, p_employe_id, p_agence_id, p_actif);
   ELSE
     IF p_mot_de_passe IS NULL OR p_mot_de_passe = '' THEN
       UPDATE utilisateur
-      SET nom_utilisateur = p_nom_utilisateur,
+      SET nom_utilisateur = LOWER(p_nom_utilisateur),
           type = p_type,
           employe_id = p_employe_id,
           agence_id = p_agence_id,
@@ -434,7 +392,7 @@ BEGIN
       WHERE id = p_id;
     ELSE
       UPDATE utilisateur
-      SET nom_utilisateur = p_nom_utilisateur,
+      SET nom_utilisateur = LOWER(p_nom_utilisateur),
           mot_de_passe = crypt(p_mot_de_passe, gen_salt('bf')),
           type = p_type,
           employe_id = p_employe_id,
@@ -449,120 +407,81 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION save_utilisateur(UUID, TEXT, TEXT, TEXT, UUID, UUID, BOOLEAN) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION login_user(TEXT, TEXT) TO anon, authenticated, service_role;
 
--- 8. Row Level Security & Request Context Helper Functions
+-- 7. Données d'Amorçage (Seed)
+INSERT INTO agence (id, nom, ville, telephone, mail, responsable, horaire_ouverture) VALUES
+('a0000000-0000-0000-0000-000000000001', 'Agence de Cotonou', 'Cotonou', '+229 21 30 00 01', 'cotonou@gnanze.com', 'M. Paul Sossa', '07:00 - 20:00'),
+('a0000000-0000-0000-0000-000000000002', 'Agence de Parakou', 'Parakou', '+229 23 61 00 02', 'parakou@gnanze.com', 'Mme. Alice Toko', '07:00 - 20:00')
+ON CONFLICT (id) DO NOTHING;
 
-CREATE OR REPLACE FUNCTION get_current_agence_id() 
-RETURNS TEXT AS $$
-BEGIN
-  RETURN coalesce(current_setting('request.headers', true)::json->>'x-agence-id', '');
-EXCEPTION WHEN OTHERS THEN
-  RETURN '';
-END;
-$$ LANGUAGE plpgsql STABLE;
+INSERT INTO fonction (id, intitule, salaire, attribut, details) VALUES
+('f0000000-0000-0000-0000-000000000001', 'SuperAdmin', 1000000.00, 'Administration Globale', 'Gestion complète du système multi-agence'),
+('f0000000-0000-0000-0000-000000000002', 'Chef Agence', 500000.00, 'Administration Agence', 'Gestion locale de son agence, caisses et employés'),
+('f0000000-0000-0000-0000-000000000003', 'Secrétaire', 250000.00, 'Ventes et Colis', 'Caissier ou agent d''accueil, billetterie et colis'),
+('f0000000-0000-0000-0000-000000000004', 'Conducteur', 300000.00, 'Chauffeur', 'Conducteur de bus pour les trajets interurbains')
+ON CONFLICT (id) DO NOTHING;
 
-CREATE OR REPLACE FUNCTION get_current_user_role() 
-RETURNS TEXT AS $$
-BEGIN
-  RETURN coalesce(current_setting('request.headers', true)::json->>'x-user-role', '');
-EXCEPTION WHEN OTHERS THEN
-  RETURN '';
-END;
-$$ LANGUAGE plpgsql STABLE;
+INSERT INTO employe (id, matricule, nom, prenom, telephone, agence_id, fonction_id, qualification, date_embauche) VALUES
+('e0000000-0000-0000-0000-000000000001', 'EMP-001', 'KOFFI', 'Jean', '+229 97 00 00 01', 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000001', 'Ingénieur Systèmes', '2025-01-15'),
+('e0000000-0000-0000-0000-000000000002', 'EMP-002', 'SADJI', 'Hubert', '+229 95 00 00 02', 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000002', 'Manager Logistique', '2025-02-01'),
+('e0000000-0000-0000-0000-000000000003', 'EMP-003', 'BIO', 'Mariam', '+229 90 00 00 03', 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000003', 'Comptable Assistante', '2025-03-01'),
+('e0000000-0000-0000-0000-000000000004', 'EMP-004', 'AGBADO', 'Pascal', '+229 91 00 00 04', 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000004', 'Permis D, FIMO', '2025-02-10')
+ON CONFLICT (id) DO NOTHING;
 
--- Enable RLS on the 5 operational tables
+INSERT INTO utilisateur (id, nom_utilisateur, mot_de_passe, type, employe_id, agence_id) VALUES
+('10000000-0000-0000-0000-000000000001', 'superadmin', crypt('superadmin123', gen_salt('bf')), 'SuperAdmin', 'e0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001'),
+('20000000-0000-0000-0000-000000000002', 'admin', crypt('admin123', gen_salt('bf')), 'Admin', 'e0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001'),
+('30000000-0000-0000-0000-000000000003', 'caissier', crypt('caissier123', gen_salt('bf')), 'user', 'e0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001')
+ON CONFLICT (id) DO NOTHING;
+
+-- 8. Configuration RLS Permissive (Accès Total Applicatif)
+ALTER TABLE agence ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS agence_policy ON agence;
+CREATE POLICY agence_policy ON agence FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE employe ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS employe_policy ON employe;
+CREATE POLICY employe_policy ON employe FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE fonction ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS fonction_policy ON fonction;
+CREATE POLICY fonction_policy ON fonction FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE vehicule ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS vehicule_policy ON vehicule;
+CREATE POLICY vehicule_policy ON vehicule FOR ALL USING (true) WITH CHECK (true);
+
 ALTER TABLE trajet ENABLE ROW LEVEL SECURITY;
-ALTER TABLE facture ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS trajet_policy ON trajet;
+CREATE POLICY trajet_policy ON trajet FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE client ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS client_policy ON client;
+CREATE POLICY client_policy ON client FOR ALL USING (true) WITH CHECK (true);
+
 ALTER TABLE reservation ENABLE ROW LEVEL SECURITY;
-ALTER TABLE mouvement ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS reservation_policy ON reservation;
+CREATE POLICY reservation_policy ON reservation FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE facture ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS facture_policy ON facture;
+CREATE POLICY facture_policy ON facture FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE reglement ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS reglement_policy ON reglement;
+CREATE POLICY reglement_policy ON reglement FOR ALL USING (true) WITH CHECK (true);
+
 ALTER TABLE colis ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS colis_policy ON colis;
+CREATE POLICY colis_policy ON colis FOR ALL USING (true) WITH CHECK (true);
 
--- Define Policies for trajet
-CREATE POLICY trajet_policy ON trajet
-FOR ALL
-USING (
-  get_current_user_role() = 'SuperAdmin'
-  OR agence_id = nullif(get_current_agence_id(), '')::UUID
-);
+ALTER TABLE mouvement ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS mouvement_policy ON mouvement;
+CREATE POLICY mouvement_policy ON mouvement FOR ALL USING (true) WITH CHECK (true);
 
--- Define Policies for facture
-CREATE POLICY facture_policy ON facture
-FOR ALL
-USING (
-  get_current_user_role() = 'SuperAdmin'
-  OR agence_id = nullif(get_current_agence_id(), '')::UUID
-);
+ALTER TABLE maintenance ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS maintenance_policy ON maintenance;
+CREATE POLICY maintenance_policy ON maintenance FOR ALL USING (true) WITH CHECK (true);
 
--- Define Policies for reservation
-CREATE POLICY reservation_policy ON reservation
-FOR ALL
-USING (
-  get_current_user_role() = 'SuperAdmin'
-  OR agence_id = nullif(get_current_agence_id(), '')::UUID
-);
-
--- Define Policies for mouvement
-CREATE POLICY mouvement_policy ON mouvement
-FOR ALL
-USING (
-  get_current_user_role() = 'SuperAdmin'
-  OR agence_id = nullif(get_current_agence_id(), '')::UUID
-);
-
--- Define Policies for colis
-CREATE POLICY colis_policy ON colis
-FOR ALL
-USING (
-  get_current_user_role() = 'SuperAdmin'
-  OR agence_depart_id = nullif(get_current_agence_id(), '')::UUID
-  OR agence_arrivee_id = nullif(get_current_agence_id(), '')::UUID
-);
-
--- Define Policies for utilisateur
 ALTER TABLE utilisateur ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY utilisateur_policy ON utilisateur
-FOR ALL
-USING (true)
-WITH CHECK (true);
-
--- 9. Automatic Agence ID Triggers (Security Fail-safes)
-
--- Trigger to set agence_id from trajet_id if not supplied (for facture and reservation)
-CREATE OR REPLACE FUNCTION set_agence_id_from_trajet()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.agence_id IS NULL THEN
-    SELECT agence_id INTO NEW.agence_id FROM trajet WHERE id = NEW.trajet_id;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER trg_set_facture_agence_id
-BEFORE INSERT ON facture
-FOR EACH ROW
-EXECUTE FUNCTION set_agence_id_from_trajet();
-
-CREATE OR REPLACE TRIGGER trg_set_reservation_agence_id
-BEFORE INSERT ON reservation
-FOR EACH ROW
-EXECUTE FUNCTION set_agence_id_from_trajet();
-
--- Trigger to set agence_id from vehicule_id if not supplied (for maintenance)
-CREATE OR REPLACE FUNCTION set_maintenance_agence_id()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.agence_id IS NULL THEN
-    SELECT agence_id INTO NEW.agence_id FROM vehicule WHERE id = NEW.vehicule_id;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER trg_set_maintenance_agence_id
-BEFORE INSERT ON maintenance
-FOR EACH ROW
-EXECUTE FUNCTION set_maintenance_agence_id();
-
-
-
+DROP POLICY IF EXISTS utilisateur_policy ON utilisateur;
+CREATE POLICY utilisateur_policy ON utilisateur FOR ALL USING (true) WITH CHECK (true);
