@@ -310,19 +310,19 @@ export function Colis() {
   });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8 px-3 py-4 sm:px-6 sm:py-8 min-w-0 overflow-hidden">
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="flex items-center gap-3">
-            <Package className="h-8 w-8 text-accent-display" />
+          <h1 className="flex items-center gap-2.5 text-xl sm:text-2xl font-bold">
+            <Package className="h-7 w-7 text-accent-display shrink-0" />
             Gestion des Colis & Bagages
           </h1>
-          <p className="mt-1 text-ink-muted">
+          <p className="mt-1 text-xs sm:text-sm text-ink-muted">
             Enregistrez les dépôts de colis (`COL-XXXX`), assignez-les aux bus et suivez l'acheminement jusqu'à la livraison.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           <Button
             variant="secondary"
             className="gap-2"
@@ -507,7 +507,7 @@ export function Colis() {
 
               {/* Actions Footer */}
               <div className="mt-6 pt-4 border-t border-hairline flex flex-col gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="secondary"
                     size="sm"

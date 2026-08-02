@@ -242,20 +242,20 @@ export function Employes() {
   });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8 px-3 py-4 sm:px-6 sm:py-8 min-w-0 overflow-hidden">
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="flex items-center gap-3">
-            <UsersRound className="h-8 w-8 text-accent-display" />
+          <h1 className="flex items-center gap-2.5 text-xl sm:text-2xl font-bold">
+            <UsersRound className="h-7 w-7 text-accent-display shrink-0" />
             Gestion des Employés & Personnel
           </h1>
-          <p className="mt-1 text-ink-muted">
+          <p className="mt-1 text-xs sm:text-sm text-ink-muted">
             Gérez l'annuaire du personnel d'agence, les fonctions attribuées et l'état des contrats.
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={openCreateModal} className="gap-2 bg-accent text-accent-ink hover:opacity-90">
+          <Button onClick={openCreateModal} className="gap-2 bg-accent text-accent-ink hover:opacity-90 self-start sm:self-auto text-xs sm:text-sm">
             <Plus className="h-4 w-4" />
             Nouveau Membre
           </Button>

@@ -322,20 +322,20 @@ export function Parc() {
   });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8 px-3 py-4 sm:px-6 sm:py-8 min-w-0 overflow-hidden">
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="flex items-center gap-3">
-            <Wrench className="h-8 w-8 text-accent-display" />
+          <h1 className="flex items-center gap-2.5 text-xl sm:text-2xl font-bold">
+            <Wrench className="h-7 w-7 text-accent-display shrink-0" />
             Gestion du Parc & Maintenances
           </h1>
-          <p className="mt-1 text-ink-muted">
+          <p className="mt-1 text-xs sm:text-sm text-ink-muted">
             Gérez la flotte de bus, leur disponibilité et enregistrez les travaux de maintenance avec suivi comptable automatique.
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={openCreateVehicleModal} className="gap-2 bg-accent text-accent-ink hover:opacity-90">
+          <Button onClick={openCreateVehicleModal} className="gap-2 bg-accent text-accent-ink hover:opacity-90 self-start sm:self-auto text-xs sm:text-sm">
             <Plus className="h-4 w-4" />
             Nouveau Véhicule
           </Button>
@@ -349,22 +349,22 @@ export function Parc() {
       )}
 
       {/* Filters Bar */}
-      <div className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-3 rounded-xl border border-hairline bg-surface p-3 sm:p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
           <Input
-            placeholder="Rechercher immatriculation, marque, type de bus..."
+            placeholder="Rechercher immatriculation, marque..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 text-xs sm:text-sm"
           />
         </div>
-        <div className="flex items-center gap-3">
-          <Filter className="h-4 w-4 text-ink-muted" />
+        <div className="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto">
+          <Filter className="h-4 w-4 text-ink-muted shrink-0" />
           <select
             value={stateFilter}
             onChange={(e) => setStateFilter(e.target.value)}
-            className="rounded-lg border border-hairline bg-page px-3 py-2 text-sm text-ink-display"
+            className="w-full sm:w-auto rounded-lg border border-hairline bg-page px-3 py-2 text-xs sm:text-sm text-ink-display"
           >
             <option value="all">Tous les états</option>
             <option value="Disponible">Disponible</option>
@@ -389,16 +389,16 @@ export function Parc() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredVehicles.map((veh) => (
             <article
               key={veh.id}
-              className="flex flex-col justify-between rounded-xl border border-hairline bg-surface p-6 shadow-sm hover:border-accent-display/40 transition-colors"
+              className="flex flex-col justify-between rounded-xl border border-hairline bg-surface p-4 sm:p-6 shadow-sm hover:border-accent-display/40 transition-colors"
             >
               <div>
                 {/* Header: Immat & State */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono font-bold text-lg text-ink-display tracking-wider">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-mono font-bold text-base sm:text-lg text-ink-display tracking-wider">
                     {veh.immatriculation}
                   </span>
                   <Badge
@@ -417,27 +417,27 @@ export function Parc() {
                 </div>
 
                 {/* Bus Description */}
-                <div className="mt-4 space-y-1">
-                  <h3 className="font-semibold text-lg text-ink-display">
+                <div className="mt-3 space-y-1">
+                  <h3 className="font-semibold text-base sm:text-lg text-ink-display">
                     {veh.marque || "Bus G'NANZE"}
                   </h3>
                   <p className="text-xs text-ink-muted">
                     {veh.type || "Minibus"} · Capacité: <strong className="text-ink-display">{veh.capacite} places</strong>
                   </p>
                   <p className="text-xs text-ink-muted flex items-center gap-1 pt-1">
-                    <Building2 className="h-3.5 w-3.5 text-accent-display" />
+                    <Building2 className="h-3.5 w-3.5 text-accent-display shrink-0" />
                     {veh.agence?.nom ?? "Agence Régionale"}
                   </p>
                 </div>
               </div>
 
               {/* Actions Footer */}
-              <div className="mt-6 pt-4 border-t border-hairline flex flex-col gap-2">
-                <div className="flex items-center gap-2">
+              <div className="mt-4 pt-3 border-t border-hairline flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="flex-1 gap-1"
+                    className="flex-1 min-w-[90px] gap-1 text-xs px-2"
                     onClick={() => openHistoryDrawer(veh)}
                   >
                     <History className="h-3.5 w-3.5" />
@@ -448,7 +448,7 @@ export function Parc() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="gap-1 text-signal-display"
+                      className="gap-1 text-xs px-2 text-signal-display"
                       onClick={() => openMaintenanceModal(veh)}
                     >
                       <Wrench className="h-3.5 w-3.5" />
@@ -461,6 +461,7 @@ export function Parc() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="px-2"
                         onClick={() => openEditVehicleModal(veh)}
                         title="Modifier bus"
                       >
@@ -469,6 +470,7 @@ export function Parc() {
                       <Button
                         variant="danger"
                         size="sm"
+                        className="px-2"
                         onClick={() => handleDeleteVehicle(veh)}
                         title="Supprimer le véhicule"
                       >

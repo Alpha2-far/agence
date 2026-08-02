@@ -329,19 +329,19 @@ export function Tickets() {
   });
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8 px-3 py-4 sm:px-6 sm:py-8 min-w-0 overflow-hidden">
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="flex items-center gap-3">
-            <TicketIcon className="h-8 w-8 text-accent-display" />
+          <h1 className="flex items-center gap-2.5 text-xl sm:text-2xl font-bold">
+            <TicketIcon className="h-7 w-7 text-accent-display shrink-0" />
             Billetterie & Vente Directe
           </h1>
-          <p className="mt-1 text-ink-muted">
+          <p className="mt-1 text-xs sm:text-sm text-ink-muted">
             Vendez des billets de transport, délivrez des factures et imprimez des reçus thermiques 57 mm.
           </p>
         </div>
-        <Button onClick={openSaleModal} className="gap-2 bg-accent text-accent-ink hover:opacity-90">
+        <Button onClick={openSaleModal} className="gap-2 bg-accent text-accent-ink hover:opacity-90 self-start sm:self-auto text-xs sm:text-sm">
           <Plus className="h-4 w-4" />
           Vendre un Ticket
         </Button>

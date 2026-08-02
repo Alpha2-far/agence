@@ -7,6 +7,7 @@ import {
   CircleDollarSign,
   ContactRound,
   Gauge,
+  LogOut,
   Menu,
   Package,
   ReceiptText,
@@ -149,25 +150,29 @@ export function AppShell() {
         </div>
       )}
 
-      <div className={cn("transition-[padding] duration-200", desktopOpen ? "lg:pl-72" : "lg:pl-20")}>
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-hairline bg-page/90 px-4 backdrop-blur sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            <Button size="icon" variant="ghost" className="lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu"><Menu className="h-5 w-5" /></Button>
-            <div className="min-w-0"><p className="truncate text-sm font-medium text-ink-display">{user.agence_nom ?? "Administration globale"}</p><p className="truncate text-xs text-ink-muted">Connecté en tant que {user.type}</p></div>
+      <div className={cn("transition-[padding] duration-200 min-w-0 overflow-x-hidden", desktopOpen ? "lg:pl-72" : "lg:pl-20")}>
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-hairline bg-page/90 px-3 backdrop-blur sm:px-6">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <Button size="icon" variant="ghost" className="lg:hidden shrink-0" onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu"><Menu className="h-5 w-5" /></Button>
+            <div className="min-w-0"><p className="truncate text-xs sm:text-sm font-medium text-ink-display">{user.agence_nom ?? "Administration globale"}</p><p className="truncate text-[10px] sm:text-xs text-ink-muted">Connecté en tant que {user.type}</p></div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <Button
               size="sm"
               variant="secondary"
               onClick={() => setSearchOpen(true)}
-              className="gap-2 text-xs text-ink-muted hover:text-ink-display"
+              className="gap-1.5 px-2.5 sm:px-3 text-xs text-ink-muted hover:text-ink-display"
+              aria-label="Recherche globale"
             >
-              <Search className="h-3.5 w-3.5 text-accent-display" />
+              <Search className="h-3.5 w-3.5 text-accent-display shrink-0" />
               <span className="hidden sm:inline">Recherche globale</span>
               <kbd className="hidden md:inline-block rounded bg-page px-1.5 py-0.5 text-[10px] font-mono border border-hairline">⌘K</kbd>
             </Button>
-            <ThemeToggle />
-            <Button size="sm" variant="ghost" onClick={() => void signOut()}>Déconnexion</Button>
+            <ThemeToggle className="hidden sm:inline-flex" />
+            <Button size="sm" variant="ghost" onClick={() => void signOut()} className="px-2 sm:px-3 text-xs" title="Déconnexion">
+              <LogOut className="h-4 w-4 sm:hidden" />
+              <span className="hidden sm:inline">Déconnexion</span>
+            </Button>
           </div>
         </header>
         <main><Outlet /></main>

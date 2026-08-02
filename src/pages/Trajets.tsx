@@ -4,6 +4,7 @@ import {
   Calendar,
   Clock,
   Edit2,
+  FileText,
   Filter,
   Info,
   MapPin,
@@ -353,20 +354,20 @@ export function Trajets() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8 px-3 py-4 sm:px-6 sm:py-8 min-w-0 overflow-hidden">
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="flex items-center gap-3">
-            <BusFront className="h-8 w-8 text-accent-display" />
+          <h1 className="flex items-center gap-2.5 text-xl sm:text-2xl font-bold">
+            <BusFront className="h-7 w-7 text-accent-display shrink-0" />
             Gestion des Trajets
           </h1>
-          <p className="mt-1 text-ink-muted">
+          <p className="mt-1 text-xs sm:text-sm text-ink-muted">
             Planifiez les départs, assignez les véhicules et conducteurs, et surveillez l'occupation des lignes.
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={openCreateModal} className="gap-2 bg-accent text-accent-ink hover:opacity-90">
+          <Button onClick={openCreateModal} className="gap-2 bg-accent text-accent-ink hover:opacity-90 self-start sm:self-auto text-xs sm:text-sm">
             <Plus className="h-4 w-4" />
             Nouveau Trajet
           </Button>
@@ -514,12 +515,12 @@ export function Trajets() {
               </div>
 
               {/* Card Footer Actions */}
-              <div className="mt-6 pt-4 border-t border-hairline flex flex-col gap-2">
-                <div className="flex items-center gap-2">
+              <div className="mt-4 pt-3 border-t border-hairline flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="flex-1 gap-1.5"
+                    className="flex-1 min-w-[90px] gap-1 text-xs px-2"
                     onClick={() => viewOccupancy(journey)}
                   >
                     <Users className="h-3.5 w-3.5" />
@@ -529,8 +530,19 @@ export function Trajets() {
                   {isAdmin && (
                     <>
                       <Button
+                        variant="secondary"
+                        size="sm"
+                        className="gap-1 text-xs px-2 text-accent-display"
+                        onClick={() => handleExportManifestPDF(journey.id)}
+                        title="Imprimer Manifeste Passagers PDF"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        Manifeste
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="sm"
+                        className="px-2"
                         onClick={() => openEditModal(journey)}
                         title="Modifier trajet"
                       >
@@ -539,6 +551,7 @@ export function Trajets() {
                       <Button
                         variant="danger"
                         size="sm"
+                        className="px-2"
                         onClick={() => handleDeleteTrajet(journey)}
                         title="Supprimer le trajet"
                       >
